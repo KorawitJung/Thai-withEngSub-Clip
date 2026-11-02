@@ -3,7 +3,7 @@
 usage: timing.py lines.json alignment.json subtitles.json
        timing.py --estimate narration.txt alignment.json [--rate 9]
 
-lines.json: [{"say": "text as written in narration.txt", "show": "on-screen text, | breaks", "alert": false}]
+lines.json: [{"say": "text as written in narration.txt", "show": "on-screen text, | breaks, *accent*", "sub": "optional second language", "alert": false}]
 --estimate writes a rough alignment so a storyboard can be previewed before paying for narration.
 """
 import argparse
@@ -15,6 +15,7 @@ LEAD_IN = 0.06
 HOLD = 0.3
 MIN_ON_SCREEN = 0.8
 GAP = 0.08
+LATIN_RATE = 15.0
 
 
 def estimate_alignment(text, rate=9.0):
@@ -22,7 +23,8 @@ def estimate_alignment(text, rate=9.0):
     for part in re.split(r"(\[[^\]]*\])", text):
         tag = part.startswith("[")
         for ch in part:
-            step = 0.0 if tag or ch.isspace() else (0.12 if ch == "." else 1 / rate)
+            speed = LATIN_RATE if ch.isascii() else rate
+            step = 0.0 if tag or ch.isspace() else (0.12 if ch == "." else 1 / speed)
             chars.append(ch)
             starts.append(round(now, 3))
             now += step
@@ -41,7 +43,7 @@ def build_subtitles(lines, alignment):
         if begin < 0:
             raise ValueError(f"line {number}: not found in narration order: {say!r}")
         last = begin + len(say.rstrip(". ")) - 1
-        timed.append({"show": line["show"], "alert": bool(line.get("alert")), "start": starts[begin], "end": ends[last]})
+        timed.append({"show": line["show"], "sub": line.get("sub", ""), "alert": bool(line.get("alert")), "start": starts[begin], "end": ends[last]})
         cursor = last + 1
     for number, item in enumerate(timed):
         item["in"] = round(max(0.0, item["start"] - LEAD_IN), 3)

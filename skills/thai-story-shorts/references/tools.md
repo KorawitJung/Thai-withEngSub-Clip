@@ -20,7 +20,10 @@ python $SKILL/scripts/soundscape.py hit video/assets/hit.wav
 มีชนิด `drone`, `hit`, `tick`, `rush` ถ้าใช้ไฟล์จากภายนอก ต้องบันทึกที่มาและสัญญาอนุญาตในโปรเจกต์
 
 ## ฟอนต์
-`compose.py` ประกาศฟอนต์ `Thai Story` ซึ่งเลือก Leelawadee UI, Sukhumvit Set, Noto Sans Thai หรือ Tahoma ตัวแรกที่มีในเครื่อง
+สกิลมีคลังฟอนต์ไทยและอังกฤษ 57 แบบจาก Google Fonts ดาวน์โหลดเมื่อใช้ครั้งแรก เก็บไว้ที่ `~/.cache/thai-story-shorts/fonts` และคัดลอกเข้า `video/assets/fonts` ของคลิป ดูวิธีเลือกใน `references/fonts.md` ถ้าไม่มีอินเทอร์เน็ต ใช้ `--system-fonts` ซึ่งจะเลือก Leelawadee UI, Sukhumvit Set, Noto Sans Thai หรือ Tahoma ที่มีในเครื่อง
+
+## ความดัง
+`master.py` ตั้งค่าเริ่มต้นที่ -14 LUFS ซึ่งตรงกับคลิปตัวอย่างที่วัดได้ ปรับได้ด้วย `--lufs`
 
 คำเตือน `timeline_track_too_dense` และ `nested_structure_needs_subcomposition` จาก HyperFrames เกิดจากการรวมคลิปไว้ในไฟล์เดียว และไม่ขัดขวางการเรนเดอร์
 

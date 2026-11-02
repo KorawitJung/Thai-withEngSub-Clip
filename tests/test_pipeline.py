@@ -11,6 +11,7 @@ DEMO = ROOT / "examples" / "demo"
 sys.path.insert(0, str(SCRIPTS))
 
 import compose  # noqa: E402
+import fonts  # noqa: E402
 import timing  # noqa: E402
 
 
@@ -57,6 +58,65 @@ class ComposeTests(unittest.TestCase):
         self.assertIn("ภาษาไทย", page)
 
 
+class LanguageTests(unittest.TestCase):
+    def page(self, preset, subs):
+        line = {"show": "สวัสดี *โลก*", "sub": "Hello <world>", "alert": False, "start": 0, "end": 2, "in": 0, "out": 2}
+        with tempfile.TemporaryDirectory() as folder:
+            ep = compose.Episode([line], preset=preset, subs=subs)
+            ep.shot("a", 0, "")
+            compose.render(ep, folder)
+            return (Path(folder) / "index.html").read_text(encoding="utf-8")
+
+    def test_both_languages_are_shown_and_escaped(self):
+        page = self.page("story-night", "both")
+        self.assertIn("<em>โลก</em>", page)
+        self.assertIn("Hello &lt;world&gt;", page)
+
+    def test_subtitle_modes(self):
+        self.assertNotIn("Hello", self.page("story-night", "primary"))
+        secondary = self.page("story-night", "secondary")
+        self.assertIn("Hello", secondary)
+        self.assertNotIn('<span>สวัสดี', secondary)
+
+    def test_every_preset_renders(self):
+        for preset in compose.PRESETS:
+            self.assertIn(f'class="clip sub {compose.PRESETS[preset]["captions"]}', self.page(preset, "both"))
+
+    def test_mixed_language_estimate_finds_lines(self):
+        text = "ข่าววันนี้ in twenty seconds."
+        timed = timing.build_subtitles([{"say": "in twenty seconds", "show": "x", "sub": "y"}], timing.estimate_alignment(text))
+        self.assertEqual(timed[0]["sub"], "y")
+        self.assertGreater(timed[0]["end"], timed[0]["start"])
+
+
+class FontTests(unittest.TestCase):
+    def test_accent_can_span_words(self):
+        self.assertEqual(compose.chunks("in *20 seconds* now|ok"), ["in", "*20*", "*seconds*", "now", "ok"])
+
+    def test_preset_fonts_exist(self):
+        for preset in compose.PRESETS.values():
+            for role in ("th", "en", "accent"):
+                self.assertIn(preset[role], fonts.LIBRARY)
+
+    def test_install_uses_cached_files_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            original = fonts.CACHE
+            fonts.CACHE = Path(folder) / "cache"
+            fonts.CACHE.mkdir()
+            for weight in (500, 700):
+                (fonts.CACHE / f"kanit-{weight}.ttf").write_bytes(b"x")
+            try:
+                css = fonts.install(["kanit", "kanit"], Path(folder) / "video")
+            finally:
+                fonts.CACHE = original
+            self.assertEqual(css.count("@font-face"), 2)
+            self.assertTrue((Path(folder) / "video" / "assets" / "fonts" / "kanit-700.ttf").exists())
+
+    def test_unknown_font_is_rejected(self):
+        with self.assertRaises(ValueError):
+            fonts.install(["nope"], "unused")
+
+
 class EndToEndTests(unittest.TestCase):
     def test_demo_builds(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -65,7 +125,7 @@ class EndToEndTests(unittest.TestCase):
             run(SCRIPTS / "timing.py", "--estimate", DEMO / "narration.txt", work / "alignment.json")
             run(SCRIPTS / "timing.py", DEMO / "lines.json", work / "alignment.json", work / "subtitles.json")
             run(SCRIPTS / "soundscape.py", "drone", 30, work / "video" / "assets" / "drone.wav") if (work / "video" / "assets").mkdir(parents=True) is None else None
-            run(SCRIPTS / "compose.py", DEMO / "episode.py", work / "video", work / "subtitles.json")
+            run(SCRIPTS / "compose.py", DEMO / "episode.py", work / "video", work / "subtitles.json", "--system-fonts")
             self.assertIn("<audio", (work / "video" / "index.html").read_text(encoding="utf-8"))
 
 

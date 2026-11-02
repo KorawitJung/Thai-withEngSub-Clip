@@ -1,9 +1,9 @@
 [
- {"say": "ถ้าลิฟต์ค้างตอนไฟดับ", "show": "ถ้าลิฟต์ค้างตอนไฟดับ", "alert": false},
- {"say": "อย่างัดประตู", "show": "อย่างัดประตู", "alert": true},
- {"say": "กดปุ่มฉุกเฉินก่อน", "show": "กดปุ่มฉุกเฉินก่อน", "alert": false},
- {"say": "แล้วรอให้ช่วย", "show": "แล้วรอให้ช่วย", "alert": false},
- {"say": "หมาของคุณเห่าใส่ช่องระบายอากาศ", "show": "หมาของคุณเห่า|ใส่ช่องระบายอากาศ", "alert": false},
- {"say": "คุณคิดว่าไม่มีอะไร", "show": "คุณคิดว่าไม่มีอะไร", "alert": false},
- {"say": "จนได้ยินเสียงเคาะตอบกลับมา", "show": "จนได้ยินเสียงเคาะ|ตอบกลับมา", "alert": true}
+ {"say": "ถ้าลิฟต์ค้างตอนไฟดับ", "show": "ถ้าลิฟต์ค้างตอนไฟดับ", "sub": "If the lift stops in a blackout", "alert": false},
+ {"say": "อย่างัดประตู", "show": "อย่างัดประตู", "sub": "don't force the doors.", "alert": true},
+ {"say": "กดปุ่มฉุกเฉินก่อน", "show": "กด*ปุ่มฉุกเฉิน*ก่อน", "sub": "Press the emergency button first", "alert": false},
+ {"say": "แล้วรอให้ช่วย", "show": "แล้วรอให้ช่วย", "sub": "and wait for help.", "alert": false},
+ {"say": "หมาของคุณเห่าใส่ช่องระบายอากาศ", "show": "หมาของคุณเห่า|ใส่ช่องระบายอากาศ", "sub": "Your dog barks at the vent.", "alert": false},
+ {"say": "คุณคิดว่าไม่มีอะไร", "show": "คุณคิดว่าไม่มีอะไร", "sub": "You think it's nothing", "alert": false},
+ {"say": "จนได้ยินเสียงเคาะตอบกลับมา", "show": "จนได้ยินเสียงเคาะ|ตอบกลับมา", "sub": "until something knocks back.", "alert": true}
 ]

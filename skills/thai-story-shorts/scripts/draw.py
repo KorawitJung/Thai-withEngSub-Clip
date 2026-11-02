@@ -1,9 +1,15 @@
 """Flat SVG parts for a 1080x1920 canvas. Each function returns an SVG string."""
 import random
 
+import html as _html
+
+_BASE = dict(text="#ffffff", muted="#aeb6c6", good="#2f8f5b", vignette=True, skin="#d9ae88", dog="#c9a26b", dog_dark="#8d6c43", paper="#f4efe3", ink="#272a33", danger="#d6423c", glow="#f4d27a")
 THEMES = {
-    "night": dict(deep="#10172a", sky="#1d2a48", haze="#34466b", wall="#57617a", floor="#2e3448", metal="#8a93a6", paper="#f4efe3", ink="#272a33", danger="#d6423c", glow="#f4d27a", skin="#d9ae88", shirt="#4d7a78", dog="#c9a26b", dog_dark="#8d6c43"),
-    "dusk": dict(deep="#26151f", sky="#5b2f3d", haze="#a35d4f", wall="#74584f", floor="#3f2e2d", metal="#a1928a", paper="#f7ecdc", ink="#30231f", danger="#c93a2e", glow="#ffc66e", skin="#d6a780", shirt="#3f6c7a", dog="#d7c3a2", dog_dark="#9a8466"),
+    "night": {**_BASE, "deep": "#10172a", "sky": "#1d2a48", "haze": "#34466b", "wall": "#57617a", "floor": "#2e3448", "metal": "#8a93a6", "shirt": "#4d7a78"},
+    "dusk": {**_BASE, "deep": "#26151f", "sky": "#5b2f3d", "haze": "#a35d4f", "wall": "#74584f", "floor": "#3f2e2d", "metal": "#a1928a", "shirt": "#3f6c7a", "glow": "#ffc66e"},
+    "horror": {**_BASE, "deep": "#07090d", "sky": "#141a22", "haze": "#26313c", "wall": "#1d242c", "floor": "#11161b", "metal": "#5d6a75", "shirt": "#3a4650", "danger": "#c1272d", "glow": "#f0b23c"},
+    "paper": {**_BASE, "deep": "#efece6", "sky": "#efece6", "haze": "#d9d4ca", "wall": "#e4e0d8", "floor": "#d9d4ca", "metal": "#8f8b83", "shirt": "#6c675f", "text": "#17171a", "muted": "#7b7870", "paper": "#ffffff", "ink": "#17171a", "danger": "#d92c20", "glow": "#d92c20", "vignette": False},
+    "clean": {**_BASE, "deep": "#faf9f6", "sky": "#faf9f6", "haze": "#ebe8e1", "wall": "#f1efe9", "floor": "#e4e1da", "metal": "#a8a49b", "shirt": "#8d897f", "text": "#1c1c1e", "muted": "#8c8a84", "paper": "#ffffff", "ink": "#1c1c1e", "danger": "#bd5a45", "glow": "#2f6fdb", "vignette": False},
 }
 _C = THEMES["night"]
 
@@ -92,5 +98,57 @@ def dark(opacity=0.6):
     return f'<rect width="1080" height="1920" fill="#000" opacity="{opacity}"/>'
 
 
-def fact_card(card_id, heading, number, note=""):
-    return f'<div class="fact" id="{card_id}">{heading}<b>{number}</b>{note}</div>'
+def plain():
+    return f'<rect width="1080" height="1920" fill="{_C["deep"]}"/>'
+
+
+def host(x=540, y=1920, scale=1.0, flip=False, hat=None, arm_id=None):
+    """Bust of an on-screen presenter, for explainer layouts. hat sets a cap color."""
+    sx = -scale if flip else scale
+    mark = f' id="{arm_id}"' if arm_id else ""
+    cap = f'<path d="M-112 -470 A112 112 0 0 1 112 -470 Z" fill="{hat}"/>' if hat else f'<path d="M-112 -440 A112 112 0 0 1 112 -440 L80 -480 L-80 -480Z" fill="{_C["ink"]}"/>'
+    return (
+        f'<g transform="translate({x} {y}) scale({sx} {scale})">'
+        f'<path d="M-230 0 Q-230 -270 -80 -300 L80 -300 Q230 -270 230 0Z" fill="{_C["shirt"]}"/>'
+        f'<path{mark} d="M180 -120 Q300 -210 330 -340" fill="none" stroke="{_C["shirt"]}" stroke-width="58" stroke-linecap="round"/>'
+        f'<circle cx="332" cy="-372" r="38" fill="{_C["skin"]}"/>'
+        f'<rect x="-42" y="-340" width="84" height="70" fill="{_C["skin"]}"/>'
+        f'<circle cy="-440" r="112" fill="{_C["skin"]}"/>{cap}'
+        f'<circle cx="-40" cy="-440" r="9" fill="{_C["ink"]}"/><circle cx="40" cy="-440" r="9" fill="{_C["ink"]}"/>'
+        f'<path d="M-30 -388 Q0 -366 30 -388" fill="none" stroke="{_C["ink"]}" stroke-width="7" stroke-linecap="round"/></g>'
+    )
+
+
+def _t(text):
+    return _html.escape(str(text))
+
+
+def fact_card(card_id, heading, number, note="", top=240, translation=""):
+    extra = f"<small>{_t(translation)}</small>" if translation else ""
+    return f'<div class="panel" id="{card_id}" style="top:{top}px">{_t(heading)}<b>{_t(number)}</b>{_t(note)}{extra}</div>'
+
+
+def pill(text, top=200):
+    return f'<div class="pill" style="top:{top}px">{_t(text)}</div>'
+
+
+def clock(text):
+    return f'<div class="chip">{_t(text)}</div>'
+
+
+def versus(box_id, left, right, top=260):
+    """left and right are (label, value) pairs; the right side is the better one."""
+    return f'<div class="versus" id="{box_id}" style="top:{top}px"><div>{_t(left[0])}<b>{_t(left[1])}</b></div><div class="good">{_t(right[0])}<b>{_t(right[1])}</b></div></div>'
+
+
+def bars(box_id, title, rows, top=380):
+    """rows are (name, value, percent); the first row is highlighted. Fills get ids box_id-0, box_id-1, ..."""
+    out = f'<div class="panel bars" id="{box_id}" style="top:{top}px">{_t(title)}'
+    for number, (name, value, percent) in enumerate(rows):
+        row = "row top" if number == 0 else "row"
+        out += f'<div class="{row}"><span class="name">{_t(name)}</span><span class="track" style="display:block"><span id="{box_id}-{number}" class="fill" style="display:block;width:{percent}%"></span></span><span>{_t(value)}</span></div>'
+    return out + "</div>"
+
+
+def signboard(sign_id, title, rule="", top=420):
+    return f'<div class="sign" id="{sign_id}" style="top:{top}px">{_t(title)}<small>{_t(rule)}</small></div>'

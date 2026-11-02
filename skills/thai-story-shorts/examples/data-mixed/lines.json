@@ -1,0 +1,6 @@
+[
+ {"say": "สรุปข่าววันนี้ใน twenty seconds", "show": "สรุปข่าววันนี้ใน *20 seconds*", "sub": "Today's brief in 20 seconds"},
+ {"say": "ตัวเลขแรก รายได้โต forty percent", "show": "ตัวเลขแรก รายได้โต *40%*", "sub": "First, revenue grew 40%"},
+ {"say": "ตัวเลขที่สอง ค่าใช้จ่ายลดลงครึ่งหนึ่ง", "show": "ตัวเลขที่สอง ค่าใช้จ่าย *ลดลงครึ่งหนึ่ง*", "sub": "Second, costs fell by half"},
+ {"say": "ถ้าอยากได้ข้อมูลเต็ม กดติดตามไว้เลย", "show": "อยากได้ข้อมูลเต็ม *กดติดตาม*", "sub": "Follow for the full data"}
+]
