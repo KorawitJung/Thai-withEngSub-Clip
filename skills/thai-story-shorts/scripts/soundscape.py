@@ -1,7 +1,7 @@
 """Synthesize royalty-free ambience and effects with the standard library only.
 
-usage: soundscape.py drone seconds out.wav [--seed 3] [--root 55]
-       soundscape.py hit|tick|rush out.wav
+usage: soundscape.py drone|rain|wind seconds out.wav [--seed 3] [--root 55]
+       soundscape.py hit|tick|rush|bubbles out.wav
 """
 import argparse
 import array
@@ -59,17 +59,53 @@ def rush():
     return out
 
 
+def rain(seconds, seed=3):
+    rng = random.Random(seed)
+    count, low, out = int(seconds * RATE), 0.0, []
+    fade = max(1, int(min(1.0, seconds / 4) * RATE))
+    for n in range(count):
+        white = rng.uniform(-1, 1)
+        low += 0.25 * (white - low)
+        drop = rng.uniform(-1, 1) if rng.random() < 0.002 else 0.0
+        out.append((low + drop) * min(1.0, n / fade, (count - n) / fade))
+    return out
+
+
+def wind(seconds, seed=3):
+    rng = random.Random(seed)
+    count, low, out = int(seconds * RATE), 0.0, []
+    fade = max(1, int(min(2.0, seconds / 4) * RATE))
+    for n in range(count):
+        low += 0.012 * (rng.uniform(-1, 1) - low)
+        gust = 0.65 + 0.35 * math.sin(6.283 * 0.13 * n / RATE + seed)
+        out.append(low * gust * min(1.0, n / fade, (count - n) / fade))
+    return out
+
+
+def bubbles():
+    rng = random.Random(4)
+    out = [0.0] * int(1.5 * RATE)
+    for _ in range(14):
+        start, freq = rng.randrange(0, int(1.3 * RATE)), rng.uniform(300, 900)
+        for n in range(int(0.12 * RATE)):
+            t = n / RATE
+            out[start + n] += math.exp(-30 * t) * math.sin(6.283 * freq * (1 + 2.5 * t) * t)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("kind", choices=["drone", "hit", "tick", "rush"])
+    ap.add_argument("kind", choices=["drone", "rain", "wind", "hit", "tick", "rush", "bubbles"])
     ap.add_argument("rest", nargs="+")
     ap.add_argument("--seed", type=int, default=3)
     ap.add_argument("--root", type=float, default=55.0)
     args = ap.parse_args()
     if args.kind == "drone":
         save(drone(float(args.rest[0]), args.seed, args.root), args.rest[1])
+    elif args.kind in ("rain", "wind"):
+        save({"rain": rain, "wind": wind}[args.kind](float(args.rest[0]), args.seed), args.rest[1])
     else:
-        save({"hit": hit, "tick": tick, "rush": rush}[args.kind](), args.rest[0])
+        save({"hit": hit, "tick": tick, "rush": rush, "bubbles": bubbles}[args.kind](), args.rest[0])
     print("wrote", args.rest[-1])
 
 
