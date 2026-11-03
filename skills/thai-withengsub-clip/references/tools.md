@@ -30,12 +30,25 @@ python $SKILL/scripts/sfx.py get <AUDIO_ID> video/assets/
 ## ปรับเสียงพากย์
 `tighten.py` ตัดช่วงเงียบที่ยาวเกินและปรับเวลาใน alignment ให้ตรงกับเสียงใหม่ ใช้เมื่อเสียงยาวเกินเป้าหรือเว้นจังหวะนานเกินไป โดยรันก่อน `timing.py`:
 ```bash
-python $SKILL/scripts/tighten.py audio/narration.wav audio/alignment.json audio/tight --max-gap 0.35 --speed 1.05
+python $SKILL/scripts/tighten.py audio/narration.wav audio/alignment.json audio/tight --max-gap 0.35
 ```
-ฟังผลทุกครั้ง เพราะการตัดเงียบอาจกินปลายเสียงเบา ถ้าเป็นแบบนั้นให้ลด `--noise` เช่น `-45`
+ฟังผลทุกครั้ง เพราะการตัดเงียบอาจกินปลายเสียงเบา ถ้าเป็นแบบนั้นให้ลด `--noise` เช่น `-45` หลีกเลี่ยงการเร่งเสียงด้วย `--speed` ถ้ายาวเกินให้ตัดบทก่อน
+
+ถ้าเสียงชิดกันเกินไป หรืออยากตัดบางแถวโดยไม่สร้างเสียงใหม่ ใช้ `pace.py` หลัง `timing.py` โดยใส่เลขแถวตามที่ `timing.py` พิมพ์ออกมา:
+```bash
+python $SKILL/scripts/pace.py audio/narration.wav audio/subtitles.json audio/paced --min-gap 0.42 --pad 7=0.4 --drop 12
+```
+ค่า `--pad` เหมาะกับช่วงก่อนจุดพลิก หลังใช้ `--drop` เลขแถวถัดจากแถวที่ตัดจะลดลง ต้องแก้ `line=` ใน `episode.py` ให้ตรง
 
 ## ดนตรี
-ทางเลือกแรกคือ `soundscape.py drone` เพราะใช้เวลาน้อยและไม่ติดสัญญาของโมเดล ถ้าต้องการดนตรีจริง ใช้ `music.py` ซึ่งรันในเครื่องด้วย MusicGen:
+ทางเลือกแรกคือ `soundscape.py pad` เพราะใช้เวลาน้อย ไม่ติดสัญญาของโมเดล อยู่ในย่านเสียงที่ลำโพงมือถือเล่นได้ และไม่มีเสียงซ่า `drone`, `rain`, `wind` เหมาะเป็นเสียงช่วงสั้น ไม่ควรใช้เป็นพื้นตลอดคลิป
+
+ก่อนเรนเดอร์ให้ตรวจระดับดนตรี เป้าหมายคือต่ำกว่าเสียงพูดราว 13 LU สคริปต์จะบอกค่า volume ที่ควรใช้ แต่ยังต้องให้คนฟัง:
+```bash
+python $SKILL/scripts/audio_check.py video/assets/narration.wav video/assets/music.wav --volume 0.2
+```
+
+ถ้าต้องการดนตรีจริง ใช้ `music.py` ซึ่งรันในเครื่องด้วย MusicGen:
 ```bash
 uv run $SKILL/scripts/music.py "dark ambient, slow, no drums" 70 video/assets/music.wav
 ```
@@ -45,7 +58,7 @@ uv run $SKILL/scripts/music.py "dark ambient, slow, no drums" 70 video/assets/mu
 - โมเดลเริ่มต้นมีสัญญาห้ามใช้เชิงพาณิชย์ ตรวจสัญญาล่าสุดก่อน ถ้าคลิปหารายได้ให้ใช้เสียงอื่น
 
 ## ฟอนต์
-สกิลมีคลังฟอนต์ไทยและอังกฤษ 57 แบบจาก Google Fonts ดาวน์โหลดเมื่อใช้ครั้งแรก เก็บไว้ที่ `~/.cache/thai-story-shorts/fonts` และคัดลอกเข้า `video/assets/fonts` ของคลิป ดูวิธีเลือกใน `references/fonts.md` ถ้าไม่มีอินเทอร์เน็ต ใช้ `--system-fonts` ซึ่งจะเลือก Leelawadee UI, Sukhumvit Set, Noto Sans Thai หรือ Tahoma ที่มีในเครื่อง
+สกิลมีคลังฟอนต์ไทยและอังกฤษ 57 แบบจาก Google Fonts ดาวน์โหลดเมื่อใช้ครั้งแรก เก็บไว้ที่ `~/.cache/thai-withengsub-clip/fonts` และคัดลอกเข้า `video/assets/fonts` ของคลิป ดูวิธีเลือกใน `references/fonts.md` ถ้าไม่มีอินเทอร์เน็ต ใช้ `--system-fonts` ซึ่งจะเลือก Leelawadee UI, Sukhumvit Set, Noto Sans Thai หรือ Tahoma ที่มีในเครื่อง
 
 ## ความดัง
 `master.py` ตั้งค่าเริ่มต้นที่ -14 LUFS ซึ่งตรงกับคลิปตัวอย่างที่วัดได้ ปรับได้ด้วย `--lufs` เมื่อเสร็จจะวัดไฟล์สุดท้าย และเขียน `<ชื่อไฟล์>-review.md` พร้อมรายการที่คนต้องตรวจ

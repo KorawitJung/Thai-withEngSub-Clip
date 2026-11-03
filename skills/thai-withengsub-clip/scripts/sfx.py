@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 
 API = "https://api.openverse.org/v1/audio/"
-HEADERS = {"User-Agent": "thai-story-shorts/1.0"}
+HEADERS = {"User-Agent": "thai-withengsub-clip/1.0"}
 
 
 def fetch_json(url):

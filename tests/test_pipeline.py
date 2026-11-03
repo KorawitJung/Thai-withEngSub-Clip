@@ -1,3 +1,4 @@
+import argparse
 import json
 import subprocess
 import sys
@@ -5,15 +6,19 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1] / "skills" / "thai-story-shorts"
+ROOT = Path(__file__).resolve().parents[1] / "skills" / "thai-withengsub-clip"
 SCRIPTS = ROOT / "scripts"
 DEMO = ROOT / "examples" / "demo"
 sys.path.insert(0, str(SCRIPTS))
 
+import audio_check  # noqa: E402
 import compose  # noqa: E402
+import cover  # noqa: E402
+import draw  # noqa: E402
 import fonts  # noqa: E402
 import master  # noqa: E402
 import music  # noqa: E402
+import pace  # noqa: E402
 import sfx  # noqa: E402
 import soundscape  # noqa: E402
 import tighten  # noqa: E402
@@ -32,6 +37,25 @@ class TimingTests(unittest.TestCase):
     def test_missing_line_is_reported(self):
         with self.assertRaises(ValueError):
             timing.build_subtitles([{"say": "ไม่มีคำนี้", "show": "x"}], timing.estimate_alignment("สวัสดี"))
+
+
+class SnapTests(unittest.TestCase):
+    def test_edges_leave_silence(self):
+        timed = [{"start": 1.0, "end": 3.0}, {"start": 8.16, "end": 11.0}]
+        moved = timing.snap_to_audio(timed, [(2.5, 3.5), (7.5, 8.66)])
+        self.assertEqual(moved, 2)
+        self.assertEqual(timed[0]["end"], 2.5)
+        self.assertEqual(timed[1]["start"], 8.66)
+
+    def test_short_blip_does_not_split_a_pause(self):
+        timed = [{"start": 6.12, "end": 8.0}]
+        timing.snap_to_audio(timed, [(5.76, 6.06), (6.12, 6.33)])
+        self.assertEqual(timed[0]["start"], 6.33)
+
+    def test_line_in_speech_or_all_silent_is_kept(self):
+        timed = [{"start": 1.0, "end": 2.0}, {"start": 5.2, "end": 5.8}]
+        self.assertEqual(timing.snap_to_audio(timed, [(5.0, 6.0)]), 0)
+        self.assertEqual(timed[1]["start"], 5.2)
 
 
 class ComposeTests(unittest.TestCase):
@@ -169,6 +193,88 @@ class AudioToolTests(unittest.TestCase):
         for name in ("rain", "wind"):
             self.assertTrue(any(getattr(soundscape, name)(0.5)))
         self.assertEqual(len(soundscape.bubbles()), int(1.5 * soundscape.RATE))
+
+
+class PaceTests(unittest.TestCase):
+    def lines(self):
+        return [{"show": str(k), "start": k * 1.0 + 0.1, "end": k * 1.0 + 0.9} for k in range(3)]
+
+    def test_gaps_reach_minimum_and_pads_add_up(self):
+        _, timed = pace.plan(self.lines(), 3.0, min_gap=0.5, pads={2: 0.25})
+        self.assertAlmostEqual(timed[1]["start"] - timed[0]["end"], 0.5, places=3)
+        self.assertAlmostEqual(timed[2]["start"] - timed[1]["end"], 0.75, places=3)
+
+    def test_large_gap_is_kept_and_cut_is_mid_gap(self):
+        lines = [{"show": "a", "start": 0.0, "end": 1.0}, {"show": "b", "start": 3.0, "end": 4.0}]
+        pieces, timed = pace.plan(lines, 4.0, min_gap=0.4)
+        self.assertEqual(pieces[0][:2], (0.0, 2.0))
+        self.assertEqual(timed[1]["start"], 3.0)
+
+    def test_drop_removes_the_line_and_its_audio(self):
+        pieces, timed = pace.plan(self.lines(), 3.0, min_gap=0.0, drop={1})
+        self.assertEqual([item["show"] for item in timed], ["0", "2"])
+        self.assertEqual(len(pieces), 2)
+
+    def test_audio_length_matches_plan(self):
+        with tempfile.TemporaryDirectory() as folder:
+            work = Path(folder)
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=f=440:d=3", str(work / "n.wav")], check=True)
+            (work / "s.json").write_text(json.dumps(self.lines()), encoding="utf-8")
+            subprocess.run([sys.executable, str(SCRIPTS / "pace.py"), str(work / "n.wav"), str(work / "s.json"), str(work / "out"), "--min-gap", "0.5", "--pad", "2=0.3"], check=True, capture_output=True)
+            timed = json.loads((work / "out" / "subtitles.json").read_text(encoding="utf-8"))
+            self.assertAlmostEqual(tighten.duration_of(work / "out" / "narration.wav"), timed[-1]["end"] + 0.1, delta=0.05)
+
+
+class ChannelAndCoverTests(unittest.TestCase):
+    def test_channel_fills_only_what_is_unset(self):
+        line = {"show": "ก", "start": 0, "end": 1, "in": 0, "out": 1}
+        ep = compose.Episode([line])
+        ep.brand = "ของตอนนี้"
+        compose.apply_channel(ep, {"brand": "ช่อง", "still": True, "outro": {"name": "ช่อง"}})
+        self.assertEqual(ep.brand, "ของตอนนี้")
+        self.assertTrue(ep.still)
+        self.assertEqual(ep.closing["name"], "ช่อง")
+
+    def test_template_channel_uses_real_preset_and_fonts(self):
+        channel = json.loads((ROOT / "templates" / "channel.json").read_text(encoding="utf-8"))
+        self.assertIn(channel["preset"], compose.PRESETS)
+        for font in channel["fonts"].values():
+            self.assertIn(font, fonts.LIBRARY)
+
+    def test_still_turns_off_camera_zoom(self):
+        line = {"show": "ก", "start": 0, "end": 1, "in": 0, "out": 1}
+        with tempfile.TemporaryDirectory() as folder:
+            ep = compose.Episode([line])
+            ep.still = True
+            ep.shot("a", 0, "", zoom=1.5)
+            compose.render(ep, folder)
+            self.assertNotIn("scale:1.5", (Path(folder) / "index.html").read_text(encoding="utf-8"))
+
+    def test_photo_card_shows_escaped_credit(self):
+        card = draw.photo_card("x", "assets/a.jpg", "ภาพ: A<B> · CC BY 4.0", tag="ภาพจริง")
+        self.assertIn("A&lt;B&gt;", card)
+        self.assertIn("assets/a.jpg", card)
+
+    def test_cover_requires_credit_for_photo(self):
+        args = argparse.Namespace(out="unused", title="ก", kicker="", sub="", photo="a.jpg", inset=None, tag="", credit="", logo=None, preset="story-night", system_fonts=True)
+        with self.assertRaises(SystemExit):
+            cover.build(args)
+
+
+class AudioCheckTests(unittest.TestCase):
+    def test_flags_loud_and_hissy_bed_and_suggests_volume(self):
+        found = audio_check.report(-16, {"full": -16, "treble": -20, "mid": -40}, 1.0, 13)
+        self.assertEqual(len(found), 3)
+        self.assertIn("0.22", found[0])
+
+    def test_good_bed_passes(self):
+        self.assertEqual(audio_check.report(-16, {"full": -16, "treble": -55, "mid": -18}, 0.22, 13), [])
+
+    def test_pad_has_no_noise_above_4khz(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "pad.wav"
+            soundscape.save(soundscape.pad(6), str(path))
+            self.assertLess(master.loudness(path, "highpass=f=4000,highpass=f=4000") or -99, -50)
 
 
 class EndToEndTests(unittest.TestCase):

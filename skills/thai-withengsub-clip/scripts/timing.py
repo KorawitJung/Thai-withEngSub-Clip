@@ -1,6 +1,6 @@
 """Turn a line plan and character alignment into timed subtitle lines.
 
-usage: timing.py lines.json alignment.json subtitles.json
+usage: timing.py lines.json alignment.json subtitles.json [--audio narration.wav]
        timing.py --estimate narration.txt alignment.json [--rate 9]
 
 lines.json: [{"say": "text as written in narration.txt", "show": "on-screen text, | breaks, *accent*", "sub": "optional second language", "alert": false}]
@@ -16,6 +16,9 @@ HOLD = 0.3
 MIN_ON_SCREEN = 0.8
 GAP = 0.08
 LATIN_RATE = 15.0
+SNAP_NOISE = -45
+SNAP_LENGTH = 0.12
+SNAP_BLIP = 0.1
 
 
 def estimate_alignment(text, rate=9.0):
@@ -45,6 +48,30 @@ def build_subtitles(lines, alignment):
         last = begin + len(say.rstrip(". ")) - 1
         timed.append({"show": line["show"], "sub": line.get("sub", ""), "alert": bool(line.get("alert")), "start": starts[begin], "end": ends[last]})
         cursor = last + 1
+    return fit_windows(timed)
+
+
+def snap_to_audio(timed, silences):
+    """Move a line's edges out of real silence; voice timestamps can place words inside a pause."""
+    moved, merged = 0, []
+    for quiet_from, quiet_to in silences:
+        if merged and quiet_from - merged[-1][1] < SNAP_BLIP:
+            merged[-1] = (merged[-1][0], quiet_to)
+        else:
+            merged.append((quiet_from, quiet_to))
+    for item in timed:
+        start, end = item["start"], item["end"]
+        for quiet_from, quiet_to in merged:
+            if quiet_from <= start < quiet_to and quiet_to < end:
+                start = quiet_to
+            if quiet_from < end <= quiet_to and quiet_from > start:
+                end = quiet_from
+        moved += (start, end) != (item["start"], item["end"])
+        item["start"], item["end"] = round(start, 3), round(end, 3)
+    return moved
+
+
+def fit_windows(timed):
     for number, item in enumerate(timed):
         item["in"] = round(max(0.0, item["start"] - LEAD_IN), 3)
         wanted = max(item["end"] + HOLD, item["in"] + MIN_ON_SCREEN)
@@ -57,6 +84,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--estimate", action="store_true")
     ap.add_argument("--rate", type=float, default=9.0)
+    ap.add_argument("--audio", help="narration file; line edges that fall in real silence are corrected")
     ap.add_argument("paths", nargs="+")
     args = ap.parse_args()
     if args.estimate:
@@ -70,6 +98,11 @@ def main():
         json.loads(Path(plan).read_text(encoding="utf-8")),
         json.loads(Path(alignment).read_text(encoding="utf-8")),
     )
+    if args.audio:
+        from tighten import find_silences
+        moved = snap_to_audio(timed, find_silences(args.audio, SNAP_NOISE, SNAP_LENGTH))
+        fit_windows(timed)
+        print(f"corrected {moved} of {len(timed)} lines from the audio")
     Path(target).write_text(json.dumps(timed, ensure_ascii=False, indent=1), encoding="utf-8")
     for number, item in enumerate(timed):
         print(f"{number:3} {item['in']:7.2f} {item['out']:7.2f} {'!' if item['alert'] else ' '} {item['show']}".encode("ascii", "backslashreplace").decode())

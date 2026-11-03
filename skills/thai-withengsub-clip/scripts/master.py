@@ -10,18 +10,23 @@ import subprocess
 from pathlib import Path
 
 
+def loudness(path, before=""):
+    chain = f"{before},ebur128" if before else "ebur128"
+    log = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-i", str(path), "-af", chain, "-f", "null", "-"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    ).stderr
+    found = re.findall(r"I:\s+(-?[\d.]+) LUFS", log)
+    return float(found[-1]) if found else None
+
+
 def measure(path):
     info = json.loads(subprocess.run(
         ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration", "-of", "json", str(path)],
         capture_output=True, text=True, check=True,
     ).stdout)
-    log = subprocess.run(
-        ["ffmpeg", "-hide_banner", "-i", str(path), "-af", "ebur128", "-f", "null", "-"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
-    ).stderr
-    found = re.findall(r"I:\s+(-?[\d.]+) LUFS", log)
     stream = info["streams"][0]
-    return {"width": stream["width"], "height": stream["height"], "seconds": float(info["format"]["duration"]), "lufs": float(found[-1]) if found else None}
+    return {"width": stream["width"], "height": stream["height"], "seconds": float(info["format"]["duration"]), "lufs": loudness(path)}
 
 
 def problems(result, lufs, max_seconds):

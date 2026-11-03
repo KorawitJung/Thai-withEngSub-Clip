@@ -11,7 +11,7 @@ import shutil
 import urllib.request
 from pathlib import Path
 
-CACHE = Path(os.environ.get("THAI_STORY_FONT_CACHE", Path.home() / ".cache" / "thai-story-shorts" / "fonts"))
+CACHE = Path(os.environ.get("THAI_STORY_FONT_CACHE", Path.home() / ".cache" / "thai-withengsub-clip" / "fonts"))
 REGULAR = (500, 700)
 SINGLE = (400,)
 RANGE = (400, 700)

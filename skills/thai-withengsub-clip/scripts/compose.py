@@ -86,6 +86,7 @@ class Episode:
         self.font_body = FALLBACK
         self.font_accent = FALLBACK
         self.brand = ""
+        self.still = False
         self.closing = None
         self.shots = []
         self.sounds = []
@@ -191,7 +192,7 @@ def render(ep, video_dir):
             f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">{fix(item["art"])}</svg></div>{fix(item["html"])}{chrome}</div>'
         )
         script.append(
-            f'(function(T,D){{tl.fromTo("#{pid}-cam",{{scale:1}},{{scale:{item["zoom"]},duration:D,ease:"sine.inOut"}},T);\n{fix(item["motion"])}}})({item["start"]},{item["dur"]});'
+            f'(function(T,D){{tl.fromTo("#{pid}-cam",{{scale:1}},{{scale:{1 if ep.still else item["zoom"]},duration:D,ease:"sine.inOut"}},T);\n{fix(item["motion"])}}})({item["start"]},{item["dur"]});'
         )
     if ep.closing:
         handle = f'<div class="handle">{html.escape(ep.closing["handle"])}</div>' if ep.closing["handle"] else ""
@@ -239,6 +240,16 @@ html,body{{width:{W}px;height:{H}px;overflow:hidden;background:{colors['deep']}}
 .bars .fill{{height:100%;border-radius:17px;background:{colors['muted']}}}.bars .row.top .fill{{background:{colors['danger']}}}
 .sign{{position:absolute;left:90px;right:150px;padding:36px 44px;border:10px solid {colors['metal']};border-radius:8px;background:{colors['floor']};color:{colors['glow']};opacity:0;font-size:46px;font-weight:700;line-height:1.3}}
 .sign small{{display:block;font-size:34px;font-weight:500;color:{colors['text']}}}
+.photo{{position:absolute;left:96px;right:144px;opacity:0}}
+.photo img{{display:block;width:100%;max-height:620px;object-fit:cover;border:12px solid #f5eee2;border-radius:6px;box-shadow:0 18px 40px rgba(0,0,0,.4)}}
+.photo .tag{{position:absolute;top:-26px;left:-10px;padding:6px 22px;border-radius:12px;background:#ffd65a;color:#1e140a;font-size:36px;font-weight:700}}
+.photo small{{display:block;margin-top:14px;color:#fff;font-size:24px;text-shadow:0 1px 6px #000}}
+.cover-text{{position:absolute;top:240px;left:70px;right:150px}}
+.cover-text .kicker{{color:#ffd65a;font-size:80px;font-weight:700;line-height:1.4;-webkit-text-stroke:10px #141014;paint-order:stroke fill}}
+.cover-text .title{{display:inline-block;margin:6px 0 18px -24px;padding:6px 24px 14px;border-radius:22px;background:{colors['danger']};color:#fff;font-size:118px;font-weight:700;line-height:1.35}}
+.cover-text .sub-title{{color:#fff;font-size:52px;font-weight:600;line-height:1.4;-webkit-text-stroke:8px #141014;paint-order:stroke fill}}
+.cover-bg{{position:absolute;inset:0;width:1080px;height:1920px;object-fit:cover}}
+.cover-logo{{position:absolute;top:180px;right:150px;width:220px}}
 .sub{{position:absolute;left:72px;right:144px;text-align:center;z-index:10}}
 .sub em{{font-style:normal;color:{colors['glow']}}}
 .sub.cinema,.sub.stack{{top:1120px}}
@@ -277,20 +288,34 @@ window.__timelines["main"]=tl;
     (target / "index.html").write_text(page, encoding="utf-8")
 
 
+def apply_channel(ep, channel):
+    """Fill what the episode left unset from channel.json, so choices are not asked again."""
+    ep.brand = ep.brand or channel.get("brand", "")
+    ep.still = ep.still or channel.get("still", False)
+    outro = channel.get("outro")
+    if outro and not ep.closing:
+        ep.outro(outro["name"], outro.get("handle", ""))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("episode")
     ap.add_argument("video")
     ap.add_argument("subtitles")
     ap.add_argument("--tail", type=float, default=2.5)
-    ap.add_argument("--preset", default="story-night", choices=sorted(PRESETS))
-    ap.add_argument("--subs", default="both", choices=["both", "primary", "secondary"])
+    ap.add_argument("--preset", choices=sorted(PRESETS))
+    ap.add_argument("--subs", choices=["both", "primary", "secondary"])
+    ap.add_argument("--channel", help="channel.json with choices shared by every clip; other flags override it")
+    ap.add_argument("--still", action="store_true", help="keep backgrounds still, with no camera zoom")
     ap.add_argument("--font-th", help="Thai font id, see fonts.py list")
     ap.add_argument("--font-en", help="English font id")
     ap.add_argument("--font-accent", help="font id for *accent* words")
     ap.add_argument("--system-fonts", action="store_true", help="skip downloads and use fonts already on this computer")
     args = ap.parse_args()
-    ep = Episode(json.loads(Path(args.subtitles).read_text(encoding="utf-8")), args.tail, args.preset, args.subs)
+    channel = json.loads(Path(args.channel).read_text(encoding="utf-8")) if args.channel else {}
+    ep = Episode(json.loads(Path(args.subtitles).read_text(encoding="utf-8")), args.tail, args.preset or channel.get("preset", "story-night"), args.subs or channel.get("subs", "both"))
+    ep.fonts.update(channel.get("fonts", {}))
+    ep.still = args.still
     for role, value in (("th", args.font_th), ("en", args.font_en), ("accent", args.font_accent)):
         if value:
             ep.fonts[role] = value
@@ -303,6 +328,7 @@ def main():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.build(ep)
+    apply_channel(ep, channel)
     render(ep, args.video)
     for item in ep.schedule():
         note = "  <- outside 2-8s" if not 2 <= item["dur"] <= 8 else ""

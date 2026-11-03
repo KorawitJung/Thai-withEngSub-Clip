@@ -150,5 +150,19 @@ def bars(box_id, title, rows, top=380):
     return out + "</div>"
 
 
+def photo_card(card_id, src, credit, tag="", top=300, tilt=0, shown=False):
+    """Real photo in a frame, with its credit always visible. src is relative to the video folder."""
+    label = f'<span class="tag">{_t(tag)}</span>' if tag else ""
+    style = f"top:{top}px" + (";opacity:1" if shown else "")
+    return f'<div class="photo" id="{card_id}" style="{style}"><div style="transform:rotate({tilt}deg)">{label}<img src="{_t(src)}" alt=""></div><small>{_t(credit)}</small></div>'
+
+
+def time_sky(progress, gid="sky", start=("#2a3a6b", "#f2a07c"), end=("#8cc8f0", "#e8f4f4")):
+    """Sky that follows story time, from 0 (first light) to 1 (morning)."""
+    def mix(a, b):
+        return "#" + "".join(f"{round(int(a[k:k + 2], 16) * (1 - progress) + int(b[k:k + 2], 16) * progress):02x}" for k in (1, 3, 5))
+    return backdrop(mix(start[0], end[0]), mix(start[1], end[1]), gid)
+
+
 def signboard(sign_id, title, rule="", top=420):
     return f'<div class="sign" id="{sign_id}" style="top:{top}px">{_t(title)}<small>{_t(rule)}</small></div>'

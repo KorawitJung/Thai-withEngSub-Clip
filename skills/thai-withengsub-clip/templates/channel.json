@@ -1,0 +1,15 @@
+{
+  "brand": "ชื่อช่อง",
+  "preset": "story-warm",
+  "subs": "primary",
+  "still": true,
+  "fonts": {"th": "kanit", "en": "inter", "accent": "kanit"},
+  "outro": {"name": "ชื่อช่อง", "handle": "@yourchannel"},
+  "voices": {
+    "th": {"voice_id": "", "model": "eleven_v3"},
+    "en": {"voice_id": "", "model": "eleven_v3"}
+  },
+  "logo": "assets/logo.png",
+  "audio": {"bed_below_voice_lu": 13, "min_gap": 0.42, "avoid": "เสียงซ่า เสียงแหลม"},
+  "commercial": false
+}

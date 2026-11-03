@@ -1,6 +1,6 @@
 """Synthesize royalty-free ambience and effects with the standard library only.
 
-usage: soundscape.py drone|rain|wind seconds out.wav [--seed 3] [--root 55]
+usage: soundscape.py drone|pad|rain|wind seconds out.wav [--seed 3] [--root 55]
        soundscape.py hit|tick|rush|bubbles out.wav
 """
 import argparse
@@ -36,6 +36,20 @@ def drone(seconds, seed=3, root=55.0):
         for freq, phase, lfo, lfo_phase, gain in partials:
             value += gain * (0.65 + 0.35 * math.sin(6.283 * lfo * t + lfo_phase)) * math.sin(6.283 * freq * t + phase)
         out.append(value * min(1.0, n / max(fade, 1), (count - n) / max(fade, 1)))
+    return out
+
+
+def pad(seconds, seed=3, root=110.0):
+    """Soft mid-range chords with no noise, so they stay audible on phones and do not hiss."""
+    rng = random.Random(seed)
+    count = int(seconds * RATE)
+    fade = max(1, int(min(2.0, seconds / 4) * RATE))
+    notes = [(root * ratio, rng.uniform(0, 6.28), rng.uniform(0.04, 0.1)) for ratio in (1, 1.2, 1.5, 2, 3)]
+    out = []
+    for n in range(count):
+        t = n / RATE
+        value = sum((0.6 + 0.4 * math.sin(6.283 * lfo * t + phase)) * math.sin(6.283 * freq * t + phase) for freq, phase, lfo in notes)
+        out.append(value * min(1.0, n / fade, (count - n) / fade))
     return out
 
 
@@ -95,13 +109,15 @@ def bubbles():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("kind", choices=["drone", "rain", "wind", "hit", "tick", "rush", "bubbles"])
+    ap.add_argument("kind", choices=["drone", "pad", "rain", "wind", "hit", "tick", "rush", "bubbles"])
     ap.add_argument("rest", nargs="+")
     ap.add_argument("--seed", type=int, default=3)
     ap.add_argument("--root", type=float, default=55.0)
     args = ap.parse_args()
     if args.kind == "drone":
         save(drone(float(args.rest[0]), args.seed, args.root), args.rest[1])
+    elif args.kind == "pad":
+        save(pad(float(args.rest[0]), args.seed), args.rest[1])
     elif args.kind in ("rain", "wind"):
         save({"rain": rain, "wind": wind}[args.kind](float(args.rest[0]), args.seed), args.rest[1])
     else:
