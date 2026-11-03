@@ -9,18 +9,18 @@
 ## ติดตั้ง
 ดาวน์โหลด repo:
 ```bash
-git clone https://github.com/KorawitJung/thai-story-shorts.git
+git clone https://github.com/KorawitJung/Thai-withEngSub-Clip.git
 ```
 แล้วคัดลอกโฟลเดอร์ `skills/thai-withengsub-clip` ไปไว้ที่ `~/.claude/skills/thai-withengsub-clip` (บน Windows คือ `%USERPROFILE%\.claude\skills\thai-withengsub-clip`) จากนั้นเปิด session ใหม่
 
 บน Mac หรือ Linux:
 ```bash
-mkdir -p ~/.claude/skills && cp -R thai-story-shorts/skills/thai-withengsub-clip ~/.claude/skills/
+mkdir -p ~/.claude/skills && cp -R Thai-withEngSub-Clip/skills/thai-withengsub-clip ~/.claude/skills/
 ```
 
 บน Windows PowerShell:
 ```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null; Copy-Item -Recurse -Force "thai-story-shorts\skills\thai-withengsub-clip" "$env:USERPROFILE\.claude\skills\"
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null; Copy-Item -Recurse -Force "Thai-withEngSub-Clip\skills\thai-withengsub-clip" "$env:USERPROFILE\.claude\skills\"
 ```
 
 ต้องมี Python 3.10+, ffmpeg, Node.js และคีย์ ElevenLabs สำหรับเสียงพากย์จริง ถ้าจะสร้างดนตรีในเครื่องต้องมี uv และพื้นที่ราว 4 GB
