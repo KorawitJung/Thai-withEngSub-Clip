@@ -10,6 +10,8 @@
     "en": {"voice_id": "", "model": "eleven_v3"}
   },
   "logo": "assets/logo.png",
+  "max_seconds": 60,
+  "ending": {"say": "ฝากกดติดตามด้วยนะ", "hold": 5},
   "audio": {"bed_below_voice_lu": 13, "min_gap": 0.42, "avoid": "เสียงซ่า เสียงแหลม"},
   "commercial": false
 }

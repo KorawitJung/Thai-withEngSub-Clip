@@ -18,7 +18,9 @@ import draw  # noqa: E402
 import fonts  # noqa: E402
 import master  # noqa: E402
 import music  # noqa: E402
+import map_route  # noqa: E402
 import pace  # noqa: E402
+import retime  # noqa: E402
 import sfx  # noqa: E402
 import soundscape  # noqa: E402
 import tighten  # noqa: E402
@@ -275,6 +277,41 @@ class AudioCheckTests(unittest.TestCase):
             path = Path(folder) / "pad.wav"
             soundscape.save(soundscape.pad(6), str(path))
             self.assertLess(master.loudness(path, "highpass=f=4000,highpass=f=4000") or -99, -50)
+
+
+class RetimeTests(unittest.TestCase):
+    LINES = [{"in": 0.0, "out": 8.0, "start": 0.1, "end": 7.9}, {"in": 8.0, "out": 10.0, "start": 8.1, "end": 9.9}]
+
+    def test_body_fits_and_card_line_starts_the_hold(self):
+        factor, timed = retime.plan(self.LINES, 9, hold=5, card_line=True)
+        self.assertAlmostEqual(factor, 2.0)
+        self.assertAlmostEqual(timed[-1]["in"], 4.0)
+
+    def test_refuses_to_slow_down_or_go_too_fast(self):
+        with self.assertRaises(ValueError):
+            retime.plan(self.LINES, 20)
+        with self.assertRaises(ValueError):
+            retime.plan(self.LINES, 4)
+
+
+class RouteMapTests(unittest.TestCase):
+    DATA = {
+        "stops": [["a", 13.75, 100.50], ["b", 13.74, 100.49]],
+        "route": [[100.50, 13.75], [100.495, 13.745], [100.49, 13.74]],
+        "ways": [{"tags": {"waterway": "river"}, "pts": [[13.75, 100.48], [13.74, 100.48]]}, {"tags": {"highway": "primary"}, "pts": [[13.75, 100.5], [13.74, 100.5]]}],
+    }
+
+    def test_parts_use_shot_scoped_ids_and_escape_labels(self):
+        art, tags = draw.route_map(self.DATA, count=2, done=0, drawing=0, active=1, labels={"b": "<x>"})
+        self.assertIn('id="@mapclip"', art)
+        self.assertIn('id="@seg"', art)
+        self.assertIn('id="@tag"', tags)
+        self.assertIn("&lt;x&gt;", tags)
+
+    def test_stop_parsing_and_way_filter(self):
+        self.assertEqual(map_route.parse_stop("a,1.5,2.5"), ["a", 1.5, 2.5])
+        ways = map_route.ways_from({"elements": [{"tags": {"highway": "primary", "name": "x"}, "geometry": [{"lat": 1, "lon": 2}]}, {"tags": {}}]})
+        self.assertEqual(ways, [{"tags": {"highway": "primary"}, "pts": [[1, 2]]}])
 
 
 class EndToEndTests(unittest.TestCase):

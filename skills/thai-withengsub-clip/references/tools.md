@@ -40,6 +40,18 @@ python $SKILL/scripts/pace.py audio/narration.wav audio/subtitles.json audio/pac
 ```
 ค่า `--pad` เหมาะกับช่วงก่อนจุดพลิก หลังใช้ `--drop` เลขแถวถัดจากแถวที่ตัดจะลดลง ต้องแก้ `line=` ใน `episode.py` ให้ตรง
 
+## ย่อเวลาคลิป
+ใช้เมื่อผู้ใช้สั่งย่อหลังสร้างเสียงแล้ว สคริปต์เร่งเสียงและปรับเวลาซับให้ตรง ถ้าเร็วเกิน 1.25 เท่าจะเตือน ซึ่งควรเสนอให้ตัดบทแทน:
+```bash
+python $SKILL/scripts/retime.py audio/narration.wav audio/subtitles.json audio/fit --target 60 --hold 5 --card-line
+```
+`--card-line` คือแถวสุดท้ายพูดบนหน้าโลโก้ แล้วคัดลอก `audio/fit/narration.wav` ไป `video/assets/` และรัน `compose.py` ด้วย `audio/fit/subtitles.json` กับ `--hold 5`
+
+## แผนที่
+```bash
+python $SKILL/scripts/map_route.py map_data.json --stop start,13.7567,100.5018 --stop end,13.7400,100.4985
+```
+
 ## ดนตรี
 ทางเลือกแรกคือ `soundscape.py pad` เพราะใช้เวลาน้อย ไม่ติดสัญญาของโมเดล อยู่ในย่านเสียงที่ลำโพงมือถือเล่นได้ และไม่มีเสียงซ่า `drone`, `rain`, `wind` เหมาะเป็นเสียงช่วงสั้น ไม่ควรใช้เป็นพื้นตลอดคลิป
 

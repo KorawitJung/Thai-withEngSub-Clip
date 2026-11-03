@@ -1,4 +1,5 @@
 """Flat SVG parts for a 1080x1920 canvas. Each function returns an SVG string."""
+import math
 import random
 
 import html as _html
@@ -166,3 +167,80 @@ def time_sky(progress, gid="sky", start=("#2a3a6b", "#f2a07c"), end=("#8cc8f0", 
 
 def signboard(sign_id, title, rule="", top=420):
     return f'<div class="sign" id="{sign_id}" style="top:{top}px">{_t(title)}<small>{_t(rule)}</small></div>'
+
+
+def _map_path(points):
+    return "M" + "L".join(f"{x:.0f} {y:.0f}" for x, y in points)
+
+
+def _route_parts(data, frame):
+    """Project map_route.py data into frame, keeping real proportions around the stops."""
+    x, y, w, h = frame
+    lats, lons = [s[1] for s in data["stops"]], [s[2] for s in data["stops"]]
+    mid_lat, mid_lon = (min(lats) + max(lats)) / 2, (min(lons) + max(lons)) / 2
+    wide = math.cos(math.radians(mid_lat))
+    scale = 0.8 * min(h / max(max(lats) - min(lats), 1e-4), w / max((max(lons) - min(lons)) * wide, 1e-4))
+
+    def place(lat, lon):
+        return x + w / 2 + (lon - mid_lon) * wide * scale, y + h / 2 - (lat - mid_lat) * scale
+
+    route = [(lat, lon) for lon, lat in data["route"]]
+    cuts = [0]
+    for _, lat, lon in data["stops"][1:]:
+        cuts.append(min(range(cuts[-1], len(route)), key=lambda i: (route[i][0] - lat) ** 2 + (route[i][1] - lon) ** 2))
+    cuts[-1] = len(route) - 1
+    segments = [_map_path(place(*p) for p in route[a:b + 1]) for a, b in zip(cuts, cuts[1:])]
+    return place, segments
+
+
+def route_map(data, count=None, done=None, drawing=None, active=None, labels=None, frame=(50, 220, 980, 880), line="#ff5a5f", land="#fff6dd", water="#7fd6f5", border="#ffc93c"):
+    """Map from map_route.py. Returns (art, html); pass them to ep.shot with route_motion when a leg is drawing.
+
+    count: stops shown. done: finished legs. drawing: leg to animate. active: stop to highlight, its label gets id @tag.
+    labels: {stop name: text or (text, dx, dy)}. Credit the map: (c) OpenStreetMap contributors.
+    """
+    stops = data["stops"]
+    count = len(stops) if count is None else count
+    place, segments = _route_parts(data, frame)
+    done = len(segments) if done is None else done
+    labels = labels or {}
+    x, y, w, h = frame
+    wet, big, small = "", "", ""
+    for way in data["ways"]:
+        tags, path = way["tags"], _map_path(place(*p) for p in way["pts"])
+        if tags.get("waterway") == "river":
+            wet += f'<path d="{path}" fill="none" stroke="{water}" stroke-width="100" stroke-linejoin="round"/>'
+        elif tags.get("natural") == "water":
+            wet += f'<path d="{path}" fill="{water}" stroke="{water}" stroke-width="4"/>'
+        elif tags.get("highway") in ("primary", "secondary"):
+            big += path
+        elif tags.get("highway"):
+            small += path
+    stroke = f'fill="none" stroke="{line}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"'
+    art = (f'<defs><clipPath id="@mapclip"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="36"/></clipPath></defs>'
+           f'<g clip-path="url(#@mapclip)"><rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{land}"/>{wet}'
+           f'<path d="{small}" fill="none" stroke="#eadfc0" stroke-width="5"/><path d="{big}" fill="none" stroke="#e6d6a8" stroke-width="10"/></g>'
+           f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="36" fill="none" stroke="{border}" stroke-width="8"/>')
+    art += "".join(f'<path d="{segment}" {stroke}/>' for segment in segments[:done])
+    if drawing is not None:
+        art += f'<path id="@seg" d="{segments[drawing]}" pathLength="1" stroke-dasharray="1" {stroke}/>'
+    tags = ""
+    for number, (key, lat, lon) in enumerate(stops[:count]):
+        px, py = place(lat, lon)
+        art += f'<circle cx="{px:.0f}" cy="{py:.0f}" r="20" fill="#fff" stroke="{line}" stroke-width="8"/>'
+        label = labels.get(key, key)
+        text, dx, dy = (label, 30, -30) if isinstance(label, str) else label
+        back, ink = (line, "#fff") if number == active else ("#fff", "#23323a")
+        tag_id = ' id="@tag"' if number == active else ""
+        tags += f'<div{tag_id} style="position:absolute;left:{px + dx:.0f}px;top:{py + dy:.0f}px;padding:6px 20px;border-radius:30px;background:{back};color:{ink};font-size:36px;font-weight:600;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.18)">{number + 1}. {_t(text)}</div>'
+    return art, tags
+
+
+def route_motion(share=0.85):
+    """Draw the @seg leg of route_map across most of the shot."""
+    return f'tl.fromTo("#@seg",{{strokeDashoffset:1}},{{strokeDashoffset:0,duration:D*{share},ease:"none"}},T+.05);\n'
+
+
+def end_card(logo, top=340, width=780):
+    """Logo for a still closing shot; keep it on screen with compose.py --hold."""
+    return f'<img src="{_t(logo)}" alt="" style="position:absolute;left:{(1080 - width) // 2}px;top:{top}px;width:{width}px">'

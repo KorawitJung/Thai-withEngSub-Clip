@@ -1,6 +1,6 @@
 """Write a single-file HyperFrames project from an episode script.
 
-usage: compose.py episode.py video_dir subtitles.json [--preset story-night] [--subs both] [--tail 2.5]
+usage: compose.py episode.py video_dir subtitles.json [--preset story-night] [--subs both] [--tail 2.5] [--hold 5]
 
 episode.py defines build(ep). Shots start on a subtitle line and last until the next shot,
 so timing follows the narration. In art, html and motion, "@name" becomes a shot-unique id.
@@ -303,6 +303,7 @@ def main():
     ap.add_argument("video")
     ap.add_argument("subtitles")
     ap.add_argument("--tail", type=float, default=2.5)
+    ap.add_argument("--hold", type=float, help="keep the last shot on screen this many seconds; replaces --tail")
     ap.add_argument("--preset", choices=sorted(PRESETS))
     ap.add_argument("--subs", choices=["both", "primary", "secondary"])
     ap.add_argument("--channel", help="channel.json with choices shared by every clip; other flags override it")
@@ -329,6 +330,9 @@ def main():
     spec.loader.exec_module(module)
     module.build(ep)
     apply_channel(ep, channel)
+    if args.hold is not None:
+        last_start = ep.subtitles[ep.shots[-1]["line"]]["in"]
+        ep.tail = max(0.0, round(args.hold - (ep.speech_end - last_start), 3))
     render(ep, args.video)
     for item in ep.schedule():
         note = "  <- outside 2-8s" if not 2 <= item["dur"] <= 8 else ""
