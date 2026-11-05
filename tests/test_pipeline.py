@@ -23,8 +23,10 @@ import pace  # noqa: E402
 import retime  # noqa: E402
 import sfx  # noqa: E402
 import soundscape  # noqa: E402
+import speed  # noqa: E402
 import tighten  # noqa: E402
 import timing  # noqa: E402
+import trends  # noqa: E402
 
 
 class TimingTests(unittest.TestCase):
@@ -292,6 +294,42 @@ class RetimeTests(unittest.TestCase):
             retime.plan(self.LINES, 20)
         with self.assertRaises(ValueError):
             retime.plan(self.LINES, 4)
+
+
+class SpeedTests(unittest.TestCase):
+    def test_scales_only_timing_keys(self):
+        row = {"show": "x", "in": 1.12, "out": 2.24, "start": 0.56, "end": 3.36}
+        self.assertEqual(speed.scaled([row], 1.12), [{"show": "x", "in": 1.0, "out": 2.0, "start": 0.5, "end": 3.0}])
+
+    def test_speeds_audio_by_the_requested_factor(self):
+        with tempfile.TemporaryDirectory() as folder:
+            work = Path(folder)
+            source = work / "voice.wav"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=220:duration=5.6", str(source)], check=True)
+            (work / "subs.json").write_text(json.dumps([{"in": 0.0, "out": 5.6, "start": 0.0, "end": 5.6}]), encoding="utf-8")
+            subprocess.run([sys.executable, str(SCRIPTS / "speed.py"), str(source), str(work / "subs.json"), str(work / "out"), "--factor", "1.12"], check=True, capture_output=True)
+            self.assertAlmostEqual(speed.duration(work / "out" / "narration.wav"), 5.0, delta=0.05)
+            self.assertEqual(json.loads((work / "out" / "subtitles.json").read_text(encoding="utf-8"))[0]["out"], 5.0)
+
+    def test_refuses_an_unreasonable_factor(self):
+        with tempfile.TemporaryDirectory() as folder:
+            done = subprocess.run([sys.executable, str(SCRIPTS / "speed.py"), "a.wav", "b.json", folder, "--factor", "3"], capture_output=True, text=True)
+            self.assertNotEqual(done.returncode, 0)
+
+
+class TrendsTests(unittest.TestCase):
+    def test_fetch_refuses_more_than_five_terms_before_network(self):
+        args = argparse.Namespace(terms=list("abcdef"))
+        with self.assertRaises(SystemExit):
+            trends.fetch(args)
+
+
+class ExampleTests(unittest.TestCase):
+    def test_remotion_example_has_no_media_or_private_channel_values(self):
+        example = ROOT / "examples" / "remotion-reel"
+        self.assertTrue((example / "README.md").exists())
+        for path in example.rglob("*"):
+            self.assertNotIn(path.suffix.lower(), {".wav", ".mp3", ".mp4", ".gif", ".ttf", ".png", ".jpg"}, path)
 
 
 class RouteMapTests(unittest.TestCase):

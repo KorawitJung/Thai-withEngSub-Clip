@@ -5,10 +5,13 @@
   "still": true,
   "fonts": {"th": "kanit", "en": "inter", "accent": "kanit"},
   "outro": {"name": "ชื่อช่อง", "handle": "@yourchannel"},
+  "renderer": "hyperframes",
   "voices": {
-    "th": {"voice_id": "", "model": "eleven_v3"},
-    "en": {"voice_id": "", "model": "eleven_v3"}
+    "th": {"voice_id": "", "model": "eleven_v3", "stability": 0.5, "speed": 1.0},
+    "en": {"voice_id": "", "model": "eleven_v3", "stability": 0.5, "speed": 1.0}
   },
+  "intro": {"logo_seconds": 0},
+  "credits": "clip-and-caption",
   "logo": "assets/logo.png",
   "max_seconds": 60,
   "ending": {"say": "ฝากกดติดตามด้วยนะ", "hold": 5},

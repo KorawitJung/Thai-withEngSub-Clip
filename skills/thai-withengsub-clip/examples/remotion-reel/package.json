@@ -1,0 +1,15 @@
+{
+  "name": "reels-remotion",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.540",
+    "@remotion/gif": "4.0.540",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}

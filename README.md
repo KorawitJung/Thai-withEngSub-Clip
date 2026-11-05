@@ -30,6 +30,9 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
 - `ทำคลิปเรื่องผีภาคอีสาน พากย์ไทย ซับไทยอังกฤษ`
 - `Make an English explainer reel about why short videos lose viewers`
 - `สรุปข่าวนี้เป็นคลิป 45 วินาที แยกเวอร์ชันไทยกับอังกฤษ`
+- `คิด reel เทรนด์วัยรุ่น 5 ไอเดีย แล้วทำเป็นคลิปเล่าสนุก มีตัวละครและมีม`
+
+ถ้าต้องการตัวละคร มีม และกราฟเคลื่อนไหวจำนวนมาก ดูแม่แบบ Remotion ใน `skills/thai-withengsub-clip/examples/remotion-reel`
 
 ## ค่าใช้จ่าย
 - ElevenLabs คิดตามจำนวนตัวอักษร รัน `narrate.py --dry-run` เพื่อดูจำนวนก่อนสร้างเสียง แล้วเทียบกับแพ็กที่ใช้บนเว็บผู้ให้บริการ เพราะโควตา ราคา และสิทธิ์เชิงพาณิชย์เปลี่ยนได้
