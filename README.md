@@ -1,55 +1,55 @@
 # Thai-withEngSub-Clip
 
-สกิล Claude Code สำหรับทำคลิปแอนิเมชันแนวตั้ง ภาษาไทย อังกฤษ หรือสองภาษาในคลิปเดียว ตั้งแต่บท เสียงพากย์ ซับ ภาพ ไปจนถึงไฟล์ MP4
+A Claude Code skill for making vertical animated clips in Thai, English, or both languages in one clip, from script, voiceover, subtitles, and visuals through to the final MP4.
 
-- **ภาษา:** ไทย, อังกฤษ, ซับสองภาษา, พูดปนสองภาษา หรือแยกสองเวอร์ชัน
-- **สไตล์:** `story-night`, `story-warm`, `horror-rules`, `explainer-paper`, `data-clean`
-- **แนว:** เรื่องลุ้น สยอง ตำนาน สอนเป็นขั้นตอน อธิบายธุรกิจ สรุปข่าว โปรโมตสถานที่
+- **Languages:** Thai, English, bilingual subtitles, mixed-language narration, or separate versions for each language
+- **Styles:** `story-night`, `story-warm`, `horror-rules`, `explainer-paper`, `data-clean`
+- **Genres:** suspense, horror, folklore, step-by-step tutorials, business explainers, news briefs, and local promos
 
-## ติดตั้ง
-ดาวน์โหลด repo:
+## Installation
+Download the repo:
 ```bash
 git clone https://github.com/KorawitJung/Thai-withEngSub-Clip.git
 ```
-แล้วคัดลอกโฟลเดอร์ `skills/thai-withengsub-clip` ไปไว้ที่ `~/.claude/skills/thai-withengsub-clip` (บน Windows คือ `%USERPROFILE%\.claude\skills\thai-withengsub-clip`) จากนั้นเปิด session ใหม่
+Then copy the `skills/thai-withengsub-clip` folder to `~/.claude/skills/thai-withengsub-clip` (on Windows, `%USERPROFILE%\.claude\skills\thai-withengsub-clip`) and start a new session.
 
-บน Mac หรือ Linux:
+On Mac or Linux:
 ```bash
 mkdir -p ~/.claude/skills && cp -R Thai-withEngSub-Clip/skills/thai-withengsub-clip ~/.claude/skills/
 ```
 
-บน Windows PowerShell:
+On Windows PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null; Copy-Item -Recurse -Force "Thai-withEngSub-Clip\skills\thai-withengsub-clip" "$env:USERPROFILE\.claude\skills\"
 ```
 
-ต้องมี Python 3.10+, ffmpeg, Node.js และคีย์ ElevenLabs สำหรับเสียงพากย์จริง ถ้าจะสร้างดนตรีในเครื่องต้องมี uv และพื้นที่ราว 4 GB
+You need Python 3.10+, ffmpeg, Node.js, and an ElevenLabs key for real voiceovers. To generate music locally, you also need uv and about 4 GB of disk space.
 
-## ใช้งาน
-เปิดโฟลเดอร์งานใน Claude Code แล้วเรียก `/thai-withengsub-clip` หรือพิมพ์ เช่น:
-- `ทำคลิปเรื่องผีภาคอีสาน พากย์ไทย ซับไทยอังกฤษ`
+## Usage
+Open your project folder in Claude Code, then run `/thai-withengsub-clip` or type a request in Thai or English, such as:
+- `Make a clip about a ghost story from Isan with Thai narration and Thai and English subtitles`
 - `Make an English explainer reel about why short videos lose viewers`
-- `สรุปข่าวนี้เป็นคลิป 45 วินาที แยกเวอร์ชันไทยกับอังกฤษ`
-- `คิด reel เทรนด์วัยรุ่น 5 ไอเดีย แล้วทำเป็นคลิปเล่าสนุก มีตัวละครและมีม`
+- `Turn this news story into a 45-second clip with separate Thai and English versions`
+- `Suggest 5 reel ideas based on teen trends, then make one into a fun clip with characters and memes`
 
-ถ้าต้องการตัวละคร มีม และกราฟเคลื่อนไหวจำนวนมาก ดูแม่แบบ Remotion ใน `skills/thai-withengsub-clip/examples/remotion-reel`
+For clips with many characters, memes, and animated charts, see the Remotion template in `skills/thai-withengsub-clip/examples/remotion-reel`.
 
-## ค่าใช้จ่าย
-- ElevenLabs คิดตามจำนวนตัวอักษร รัน `narrate.py --dry-run` เพื่อดูจำนวนก่อนสร้างเสียง แล้วเทียบกับแพ็กที่ใช้บนเว็บผู้ให้บริการ เพราะโควตา ราคา และสิทธิ์เชิงพาณิชย์เปลี่ยนได้
-- ขั้นอื่นในสกิลไม่มีค่าบริการ แต่ต้องตรวจสัญญาของฟอนต์ เสียงจาก Openverse และโมเดลดนตรี โมเดลเริ่มต้นของ `music.py` ห้ามใช้เชิงพาณิชย์
+## Costs
+- ElevenLabs charges by character. Run `narrate.py --dry-run` to see the count before generating a voiceover, then compare it with your plan on the provider's website, because quotas, prices, and commercial rights can change.
+- The other steps in the skill have no service fee, but check the licenses for fonts, Openverse sounds, and music models. The default model in `music.py` does not allow commercial use.
 
-## ปัญหาที่พบบ่อย
-| อาการ | แก้ |
+## Troubleshooting
+| Problem | Fix |
 |---|---|
-| ขาดโปรแกรม | รัน `check_env.py` แล้วติดตั้งตาม `references/tools.md` |
-| ซับไม่ตรงเสียง | ตรวจว่า `say` ตรงกับ `narration.txt` และใช้ alignment คู่กับไฟล์เสียงชุดเดียวกัน |
-| เสียงยาวเกิน | ตัดบท หรือใช้ `tighten.py` |
-| ดนตรีโหลดนาน | ปกติในครั้งแรก หรือใช้ `soundscape.py` แทน |
+| A program is missing | Run `check_env.py`, then install what is missing by following `references/tools.md` |
+| Subtitles don't match the voice | Check that `say` matches `narration.txt`, and use the alignment file from the same audio set |
+| The voiceover is too long | Cut the script, or use `tighten.py` |
+| Music takes a long time to load | This is normal the first time, or use `soundscape.py` instead |
 
-## ทดสอบ
+## Testing
 ```bash
 python -m unittest discover -s tests
 ```
 
-## สัญญาอนุญาต
-MIT ดู `LICENSE` และบริการภายนอกที่ใช้ใน `THIRD_PARTY.md`
+## License
+MIT. See `LICENSE`, and see `THIRD_PARTY.md` for the external services used.
