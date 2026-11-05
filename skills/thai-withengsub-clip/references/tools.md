@@ -40,12 +40,29 @@ python $SKILL/scripts/pace.py audio/narration.wav audio/subtitles.json audio/pac
 ```
 ค่า `--pad` เหมาะกับช่วงก่อนจุดพลิก หลังใช้ `--drop` เลขแถวถัดจากแถวที่ตัดจะลดลง ต้องแก้ `line=` ใน `episode.py` ให้ตรง
 
+## เร่งเสียงตามความเร็วที่สั่ง
+ใช้เมื่อผู้ใช้บอกความเร็ว เช่น 1.12 เท่า สคริปต์ปรับเวลาซับให้ตรงและวัดผลจริง:
+```bash
+python $SKILL/scripts/speed.py audio/narration.wav audio/subtitles.json audio/x112 --factor 1.12
+```
+อย่าแปลงความเร็วเป็น `retime.py --target` เพราะ `retime.py` คำนวณจากเวลาพูดกับเวลาเป้าหมาย ไม่ได้รับตัวคูณโดยตรง ความเร็วที่ได้จึงอาจไม่ตรงตามที่สั่ง
+
 ## ย่อเวลาคลิป
 ใช้เมื่อผู้ใช้สั่งย่อหลังสร้างเสียงแล้ว สคริปต์เร่งเสียงและปรับเวลาซับให้ตรง ถ้าเร็วเกิน 1.25 เท่าจะเตือน ซึ่งควรเสนอให้ตัดบทแทน:
 ```bash
 python $SKILL/scripts/retime.py audio/narration.wav audio/subtitles.json audio/fit --target 60 --hold 5 --card-line
 ```
 `--card-line` คือแถวสุดท้ายพูดบนหน้าโลโก้ แล้วคัดลอก `audio/fit/narration.wav` ไป `video/assets/` และรัน `compose.py` ด้วย `audio/fit/subtitles.json` กับ `--hold 5`
+
+## ข้อมูลการค้นหา
+`trends.py` ดึง Google Trends และคำนวณว่า 2 คำขยับตามกันแค่ไหน วิธีอ่านผลอยู่ใน `reel-style.md`:
+```bash
+uv run --with pytrends --with "urllib3<2" --with pandas --with scipy $SKILL/scripts/trends.py fetch data.json "ดูดวง" "หางาน" --to 2026-10-31
+```
+```bash
+uv run --with pandas --with scipy $SKILL/scripts/trends.py corr data.json "ดูดวง" "หางาน"
+```
+เว้นระยะระหว่างการดึงแต่ละรอบ เพื่อเลี่ยงการถูกจำกัดจำนวนครั้ง
 
 ## แผนที่
 ```bash
@@ -82,4 +99,8 @@ uv run $SKILL/scripts/music.py "dark ambient, slow, no drums" 70 video/assets/mu
 |---|---|
 | `not found in narration order` | `say` ไม่ตรงหรือไม่เรียงตาม `narration.txt` |
 | ซับเป็นสี่เหลี่ยม | ติดตั้งฟอนต์ไทย |
+| `voice_not_fine_tuned` | เสียงนั้นใช้ไม่ได้แม้เพิ่มเข้าบัญชีแล้ว ให้เลือกเสียงอื่น |
+| ฉากล้นลงมาทับซับ | ตรวจฉากที่มีของตกหรือขยับ ให้อยู่เหนือ y=1060 และดูจากไฟล์ที่เรนเดอร์แล้ว |
+| Remotion Studio ขึ้น `package.json` ENOENT | ต้องรันจากโฟลเดอร์โปรเจกต์ |
+| โค้ด TSX ในคำสั่ง Bash เพี้ยน | เขียนไฟล์ด้วยเครื่องมือเขียนไฟล์ แทน heredoc ที่มีเครื่องหมายคำพูดปนกัน |
 | ไม่รู้ตัวเลือกของ HyperFrames | รัน `npx hyperframes --help` เพราะคำสั่งอาจเปลี่ยนตามรุ่น |
